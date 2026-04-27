@@ -1,0 +1,176 @@
+version: 2
+
+models:
+
+  - name: dim_security
+    description: >
+      Conformed security dimension. One row per investable instrument.
+      Used as the security lookup across all fact tables. Includes a
+      maturity_bucket derived column for fixed-income reporting.
+    columns:
+      - name: security_key
+        description: "Surrogate dimension key. Identical to security_id in this demo; use a hash in production."
+        data_tests:
+          - not_null
+          - unique
+      - name: security_id
+        description: "Natural key from the source system."
+      - name: cusip
+        description: "9-character CUSIP, uppercased."
+      - name: isin
+        description: "12-character ISIN, uppercased."
+      - name: ticker
+        description: "Exchange ticker symbol."
+      - name: security_name
+        description: "Full legal name of the security."
+      - name: asset_class
+        description: "Asset class code: EQUITY, FIXED_INCOME, FUND, or DERIVATIVE."
+      - name: asset_class_display
+        description: "Human-readable asset class label for reporting."
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country of issuance."
+      - name: currency_code
+        description: "ISO 4217 denomination currency."
+      - name: issue_date
+        description: "Date the security was first issued."
+      - name: maturity_date
+        description: "Maturity date. Null for equities and open-ended funds."
+      - name: preferred_identifier
+        description: "Waterfall identifier: CUSIP → ISIN → ticker."
+      - name: country_currency_key
+        description: "Composite: country_code || '-' || currency_code."
+      - name: maturity_bucket
+        description: "Maturity range bucket for fixed-income analysis: Short, Medium, Long, Very Long, or N/A."
+
+  - name: dim_account
+    description: >
+      Conformed account dimension. One row per client portfolio account.
+      is_active is a derived integer flag (1 = ACTIVE, 0 = otherwise)
+      for simpler aggregation in BI tools.
+    columns:
+      - name: account_key
+        description: "Surrogate dimension key."
+        data_tests:
+          - not_null
+          - unique
+      - name: account_id
+        description: "Natural key from the source system."
+      - name: account_name
+        description: "Display name of the account."
+      - name: client_id
+        description: "Parent client identifier."
+      - name: account_type
+        description: "Account type: PENSION, ENDOWMENT, SOVEREIGN, INSURANCE, etc."
+      - name: base_currency
+        description: "ISO 4217 base reporting currency for this account."
+      - name: inception_date
+        description: "Date the account was opened."
+      - name: status
+        description: "Account lifecycle status: ACTIVE, CLOSED, or SUSPENDED."
+      - name: is_active
+        description: "1 when status = ACTIVE, 0 otherwise."
+
+  - name: fct_holdings
+    description: >
+      Daily holdings fact. Grain is one row per (holding_id). Denormalises
+      key security and account attributes for self-service BI access.
+      adjusted_market_value_usd applies a 1.2x gross-up factor used in
+      regulatory capital calculations.
+    columns:
+      - name: holding_key
+        description: "Surrogate fact key — same as holding_id in this demo."
+        data_tests:
+          - not_null
+          - unique
+      - name: holding_id
+        description: "Natural key from stg_holdings."
+      - name: account_id
+        description: "Foreign key to dim_account."
+        data_tests:
+          - not_null
+      - name: security_id
+        description: "Foreign key to dim_security."
+        data_tests:
+          - not_null
+      - name: as_of_date
+        description: "Valuation date for this position snapshot."
+      - name: account_name
+        description: "Denormalised account name for self-service queries."
+      - name: account_type
+        description: "Denormalised account type code."
+      - name: account_base_currency
+        description: "Denormalised account base reporting currency."
+      - name: cusip
+        description: "Denormalised CUSIP from dim_security."
+      - name: isin
+        description: "Denormalised ISIN from dim_security."
+      - name: ticker
+        description: "Denormalised ticker from dim_security."
+      - name: security_name
+        description: "Denormalised security name from dim_security."
+      - name: asset_class
+        description: "Denormalised asset class code from dim_security."
+      - name: asset_class_display
+        description: "Denormalised human-readable asset class label."
+      - name: quantity
+        description: "Units held, DECIMAL(28,8)."
+      - name: market_value_local
+        description: "Market value in the holding's local currency."
+      - name: market_value_usd
+        description: "Market value converted to USD."
+      - name: cost_basis_usd
+        description: "Historic cost basis in USD."
+      - name: unrealized_gain_usd
+        description: "market_value_usd minus cost_basis_usd."
+      - name: holding_currency
+        description: "ISO 4217 currency of this position."
+      - name: is_cross_currency
+        description: "1 when holding_currency differs from account base currency."
+      - name: market_to_cost_ratio
+        description: "market_value_usd / cost_basis_usd. Null when cost_basis_usd is zero."
+      - name: adjusted_market_value_usd
+        description: "market_value_usd × 1.2 gross-up factor for regulatory capital reporting."
+
+  - name: fct_account_daily_nav
+    description: >
+      Daily net asset value per account with day-over-day return.
+      Grain is one row per (account_id, as_of_date). daily_return is null
+      on the first day an account appears (no prior day to compare).
+      equity_weight is the proportion of total NAV invested in equities.
+    columns:
+      - name: account_id
+        description: "Primary key component — account identifier."
+        data_tests:
+          - not_null
+      - name: account_name
+        description: "Denormalised account display name."
+      - name: account_type
+        description: "Denormalised account type code."
+      - name: account_base_currency
+        description: "Denormalised account base reporting currency."
+      - name: as_of_date
+        description: "Primary key component — valuation date."
+        data_tests:
+          - not_null
+      - name: security_count
+        description: "Count of distinct securities held on this date."
+      - name: lot_count
+        description: "Total number of position lots."
+      - name: total_market_value_usd
+        description: "Sum of all market values in USD across the portfolio."
+      - name: total_cost_basis_usd
+        description: "Sum of all cost bases in USD."
+      - name: total_unrealized_gain_usd
+        description: "Sum of all unrealised gains/losses in USD."
+      - name: cross_currency_exposure_usd
+        description: "Market value in USD attributable to cross-currency holdings."
+      - name: equity_market_value_usd
+        description: "Market value in USD attributable to EQUITY holdings."
+      - name: fixed_income_market_value_usd
+        description: "Market value in USD attributable to FIXED_INCOME holdings."
+      - name: equity_weight
+        description: "equity_market_value_usd / total_market_value_usd. Zero when total is null."
+      - name: prior_total_market_value_usd
+        description: "Previous trading day's total NAV via LAG() window function."
+      - name: daily_return
+        description: "(today_nav − yesterday_nav) / yesterday_nav. Null on the first observation for each account."

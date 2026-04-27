@@ -1,0 +1,10 @@
+{
+  "dataPipelineIntelligence.dbtProjectPath": "${workspaceFolder}",
+  "dataPipelineIntelligence.dbtManifestPath": "target/manifest.json",
+  "dataPipelineIntelligence.oracleMetadataPath": "${workspaceFolder}/.dbt-pipeline/oracle-metadata.json",
+  "dataPipelineIntelligence.guardrailsConfigPath": "${workspaceFolder}/.pipeline-guardrails.yml",
+  "dataPipelineIntelligence.diagnostics.maxIssuesPerFile": 200,
+  "files.associations": {
+    "*.sql": "sql"
+  }
+}

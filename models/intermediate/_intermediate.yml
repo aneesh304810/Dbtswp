@@ -1,0 +1,99 @@
+version: 2
+
+models:
+
+  - name: int_holdings_enriched
+    description: >
+      Holdings enriched with security master and account attributes via
+      LEFT JOIN on security_id and account_id respectively. Grain is one
+      row per holding_id. is_cross_currency is 1 when the holding currency
+      differs from the account base currency.
+    columns:
+      - name: holding_id
+        description: "Primary key — carried from stg_holdings."
+        data_tests:
+          - not_null
+          - unique
+      - name: account_id
+        description: "Foreign key to stg_accounts."
+        data_tests:
+          - not_null
+      - name: account_name
+        description: "Denormalised from stg_accounts.name."
+      - name: account_type
+        description: "Denormalised from stg_accounts.account_type."
+      - name: account_base_currency
+        description: "Denormalised from stg_accounts.base_currency."
+      - name: security_id
+        description: "Foreign key to stg_securities."
+        data_tests:
+          - not_null
+      - name: cusip
+        description: "Denormalised from stg_securities.cusip."
+      - name: isin
+        description: "Denormalised from stg_securities.isin."
+      - name: ticker
+        description: "Denormalised from stg_securities.ticker."
+      - name: security_name
+        description: "Denormalised from stg_securities.name."
+      - name: asset_class
+        description: "Denormalised from stg_securities.asset_class."
+      - name: asset_class_display
+        description: "Denormalised from stg_securities.asset_class_display."
+      - name: security_country
+        description: "Denormalised from stg_securities.country_code."
+      - name: security_currency
+        description: "Denomination currency of the security."
+      - name: as_of_date
+        description: "Valuation date of the position."
+      - name: quantity
+        description: "Units held — carried from stg_holdings."
+      - name: market_value_local
+        description: "Market value in holding currency."
+      - name: market_value_usd
+        description: "Market value in USD."
+      - name: cost_basis_usd
+        description: "Historic cost in USD."
+      - name: unrealized_gain_usd
+        description: "market_value_usd − cost_basis_usd."
+      - name: holding_currency
+        description: "Currency of the holding position."
+      - name: is_cross_currency
+        description: "1 when holding_currency differs from account_base_currency; 0 otherwise."
+
+  - name: int_account_daily_nav
+    description: >
+      Per-account daily net asset value, aggregated from int_holdings_enriched.
+      Grain is one row per (account_id, as_of_date). Provides asset-class
+      splits (equity, fixed income) and cross-currency exposure totals.
+    columns:
+      - name: account_id
+        description: "Primary key component — account identifier."
+        data_tests:
+          - not_null
+      - name: account_name
+        description: "Denormalised account display name."
+      - name: account_type
+        description: "Denormalised account type code."
+      - name: account_base_currency
+        description: "Denormalised account base currency."
+      - name: as_of_date
+        description: "Primary key component — valuation date."
+        data_tests:
+          - not_null
+      - name: security_count
+        description: "Count of distinct securities held on this date."
+      - name: lot_count
+        description: "Total number of position lots (rows) on this date."
+      - name: total_market_value_usd
+        description: "Sum of market_value_usd across all holdings."
+      - name: total_cost_basis_usd
+        description: "Sum of cost_basis_usd across all holdings."
+      - name: total_unrealized_gain_usd
+        description: "Sum of unrealized_gain_usd across all holdings."
+      - name: cross_currency_exposure_usd
+        description: "Sum of market_value_usd for cross-currency holdings only."
+      - name: equity_market_value_usd
+        description: "Sum of market_value_usd where asset_class = EQUITY."
+      - name: fixed_income_market_value_usd
+        description: "Sum of market_value_usd where asset_class = FIXED_INCOME."

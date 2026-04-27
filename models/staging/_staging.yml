@@ -1,0 +1,147 @@
+version: 2
+
+models:
+
+  - name: stg_securities
+    description: >
+      Cleaned and typed securities reference data. One row per investable
+      instrument. Source-of-record for CUSIP, ISIN, and ticker within the
+      dbt layer. All string codes are uppercased; dates are cast to DATE.
+    columns:
+      - name: security_id
+        description: "Surrogate primary key from the upstream source system."
+        data_tests:
+          - not_null
+          - unique
+      - name: cusip
+        description: "9-character CUSIP, uppercased. Null for non-US instruments."
+      - name: isin
+        description: "12-character ISIN, uppercased. Globally unique where populated."
+        data_tests:
+          - unique
+      - name: ticker
+        description: "Exchange ticker symbol, uppercased."
+      - name: name
+        description: "Full legal security name from the source system."
+      - name: asset_class
+        description: "Asset class code: EQUITY, FIXED_INCOME, FUND, or DERIVATIVE."
+      - name: asset_class_display
+        description: "Human-readable asset class label derived from asset_class."
+      - name: country_code
+        description: "ISO 3166-1 alpha-2 country of issuance."
+      - name: currency_code
+        description: "ISO 4217 currency code of the security's denomination."
+      - name: issue_date
+        description: "Date the security was first issued."
+      - name: maturity_date
+        description: "Maturity date. Null for equities and open-ended funds."
+      - name: preferred_identifier
+        description: "Waterfall: CUSIP if present, else ISIN, else ticker."
+      - name: country_currency_key
+        description: "Composite key: country_code || '-' || currency_code. Used for FX joins."
+
+  - name: stg_accounts
+    description: >
+      Cleaned client portfolio accounts. One row per account. Status is
+      uppercased; inception_date is cast to DATE. Closed accounts are
+      retained for historical lineage.
+    columns:
+      - name: account_id
+        description: "Surrogate primary key."
+        data_tests:
+          - not_null
+          - unique
+      - name: name
+        description: "Account display name from the source system."
+      - name: client_id
+        description: "Parent client identifier. Multiple accounts may share a client_id."
+      - name: account_type
+        description: "Account type code: PENSION, ENDOWMENT, SOVEREIGN, INSURANCE, PRIVATE_WEALTH, etc."
+      - name: base_currency
+        description: "ISO 4217 base reporting currency for this account."
+      - name: inception_date
+        description: "Date the account was opened."
+      - name: status
+        description: "Account status: ACTIVE, CLOSED, or SUSPENDED."
+      - name: is_active
+        description: "1 when status = ACTIVE, 0 otherwise. Integer flag for easy aggregation."
+
+  - name: stg_holdings
+    description: >
+      Typed daily holdings positions. Grain is one row per
+      (holding_id). market_value_usd and cost_basis_usd are both cast to
+      DECIMAL(20,2) before the unrealised gain is computed to avoid
+      floating-point drift.
+    columns:
+      - name: holding_id
+        description: "Surrogate primary key."
+        data_tests:
+          - not_null
+          - unique
+      - name: account_id
+        description: "Foreign key to stg_accounts.account_id."
+        data_tests:
+          - not_null
+      - name: security_id
+        description: "Foreign key to stg_securities.security_id."
+        data_tests:
+          - not_null
+      - name: as_of_date
+        description: "Valuation date for this position snapshot."
+      - name: quantity
+        description: "Units held, cast to DECIMAL(28,8) to preserve sub-unit precision."
+      - name: market_value_local
+        description: "Market value in the security's local currency."
+      - name: market_value_usd
+        description: "Market value converted to USD."
+      - name: cost_basis_usd
+        description: "Original cost basis in USD (historic purchase price)."
+      - name: currency
+        description: "ISO 4217 currency code of the holding position."
+      - name: unrealized_gain_usd
+        description: "market_value_usd minus cost_basis_usd. Positive when the position is in profit."
+
+  - name: stg_transactions
+    description: >
+      Cleaned trade and corporate-action transactions. Quantities are
+      signed: positive for BUY and income events, negative for SELL.
+      settlement_lag_days is the calendar-day difference between
+      settle_date and trade_date.
+    columns:
+      - name: transaction_id
+        description: "Surrogate primary key."
+        data_tests:
+          - not_null
+          - unique
+      - name: account_id
+        description: "Foreign key to stg_accounts.account_id."
+        data_tests:
+          - not_null
+      - name: security_id
+        description: "Foreign key to stg_securities.security_id."
+        data_tests:
+          - not_null
+      - name: trade_date
+        description: "Date the trade was executed."
+      - name: settle_date
+        description: "Date the trade settled."
+      - name: transaction_type
+        description: "Transaction type code: BUY, SELL, DIVIDEND, INTEREST, or TRANSFER."
+      - name: currency
+        description: "ISO 4217 currency of the transaction."
+      - name: broker
+        description: "Executing broker code."
+      - name: quantity
+        description: "Absolute quantity of units traded."
+      - name: price_local
+        description: "Transaction price in local currency."
+      - name: gross_amount_local
+        description: "Gross transaction value in local currency."
+      - name: gross_amount_usd
+        description: "Gross transaction value converted to USD."
+      - name: signed_quantity
+        description: "quantity × (+1 for BUY/INCOME, -1 for SELL). Used for position reconciliation."
+      - name: settlement_lag_days
+        description: "Calendar days between trade_date and settle_date."
+      - name: transaction_category
+        description: "High-level grouping: TRADE, INCOME, TRANSFER, or OTHER."

@@ -1,0 +1,44 @@
+# dbt_project.yml
+# ---------------------------------------------------------------------------
+# Demo dbt project for the Data Pipeline Intelligence VS Code extension.
+# Designed to exercise every extension feature: lineage, column-level lineage,
+# guardrails, schema-aware Oracle rules, run/test commands, ref/source
+# autocomplete, schema.yml generation, compiled SQL preview.
+# ---------------------------------------------------------------------------
+
+name: 'swp_demo'
+version: '1.0.0'
+config-version: 2
+
+# Default profile name. Profiles are defined in profiles.yml — there are
+# two targets configured: `duckdb` (local) and `oracle` (production-shaped).
+profile: 'swp_demo'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Layer-based materialization defaults. The extension's lineage tree groups
+# by these layers based on path naming.
+models:
+  swp_demo:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+
+seeds:
+  swp_demo:
+    +schema: raw

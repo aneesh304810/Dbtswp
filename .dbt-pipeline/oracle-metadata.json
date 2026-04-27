@@ -1,0 +1,129 @@
+{
+  "_comment": "Oracle metadata for the swp_demo project. Load via 'Data Pipeline: Load Oracle Metadata' to enable schema-aware rules. The schemas/tables here mirror what the dbt models reference, so Oracle rules fire on real demo SQL. Row counts and partition info are realistic-ish for BBH-scale.",
+  "version": "1.0.0",
+  "tables": [
+    {
+      "schema": "RAW",
+      "name": "RAW_HOLDINGS",
+      "rowCountEstimate": 380000000,
+      "sizeMb": 95000,
+      "partitionType": "RANGE",
+      "partitionKeys": ["AS_OF_DATE"],
+      "columns": [
+        { "name": "HOLDING_ID",        "isIndexed": true,  "isPartitionKey": false },
+        { "name": "ACCOUNT_ID",        "isIndexed": true,  "isPartitionKey": false },
+        { "name": "SECURITY_ID",       "isIndexed": true,  "isPartitionKey": false },
+        { "name": "AS_OF_DATE",        "isIndexed": true,  "isPartitionKey": true  },
+        { "name": "QUANTITY",          "isIndexed": false, "isPartitionKey": false },
+        { "name": "MARKET_VALUE_LOCAL","isIndexed": false, "isPartitionKey": false },
+        { "name": "MARKET_VALUE_USD",  "isIndexed": false, "isPartitionKey": false },
+        { "name": "COST_BASIS_USD",    "isIndexed": false, "isPartitionKey": false },
+        { "name": "CURRENCY",          "isIndexed": false, "isPartitionKey": false }
+      ],
+      "indexes": [
+        { "name": "PK_RAW_HOLDINGS",       "type": "BTREE",  "columns": ["HOLDING_ID"], "unique": true },
+        { "name": "IX_HOLDINGS_ACCOUNT",   "type": "LOCAL",  "columns": ["ACCOUNT_ID", "AS_OF_DATE"], "unique": false },
+        { "name": "IX_HOLDINGS_SECURITY",  "type": "LOCAL",  "columns": ["SECURITY_ID", "AS_OF_DATE"], "unique": false }
+      ]
+    },
+    {
+      "schema": "RAW",
+      "name": "RAW_TRANSACTIONS",
+      "rowCountEstimate": 125000000,
+      "sizeMb": 32000,
+      "partitionType": "RANGE",
+      "partitionKeys": ["TRADE_DATE"],
+      "columns": [
+        { "name": "TRANSACTION_ID",       "isIndexed": true,  "isPartitionKey": false },
+        { "name": "ACCOUNT_ID",           "isIndexed": true,  "isPartitionKey": false },
+        { "name": "SECURITY_ID",          "isIndexed": true,  "isPartitionKey": false },
+        { "name": "TRADE_DATE",           "isIndexed": true,  "isPartitionKey": true  },
+        { "name": "SETTLE_DATE",          "isIndexed": false, "isPartitionKey": false },
+        { "name": "TRANSACTION_TYPE",     "isIndexed": false, "isPartitionKey": false },
+        { "name": "QUANTITY",             "isIndexed": false, "isPartitionKey": false },
+        { "name": "PRICE_LOCAL",          "isIndexed": false, "isPartitionKey": false },
+        { "name": "GROSS_AMOUNT_LOCAL",   "isIndexed": false, "isPartitionKey": false },
+        { "name": "GROSS_AMOUNT_USD",     "isIndexed": false, "isPartitionKey": false },
+        { "name": "CURRENCY",             "isIndexed": false, "isPartitionKey": false },
+        { "name": "BROKER",               "isIndexed": false, "isPartitionKey": false }
+      ],
+      "indexes": [
+        { "name": "PK_RAW_TRANSACTIONS",  "type": "BTREE",  "columns": ["TRANSACTION_ID"], "unique": true },
+        { "name": "IX_TXN_ACCOUNT",       "type": "LOCAL",  "columns": ["ACCOUNT_ID", "TRADE_DATE"], "unique": false }
+      ]
+    },
+    {
+      "schema": "RAW",
+      "name": "RAW_SECURITIES",
+      "rowCountEstimate": 850000,
+      "sizeMb": 280,
+      "partitionType": "NONE",
+      "partitionKeys": [],
+      "columns": [
+        { "name": "SECURITY_ID",     "isIndexed": true,  "isPartitionKey": false },
+        { "name": "CUSIP",           "isIndexed": true,  "isPartitionKey": false },
+        { "name": "ISIN",            "isIndexed": true,  "isPartitionKey": false },
+        { "name": "TICKER",          "isIndexed": true,  "isPartitionKey": false },
+        { "name": "SECURITY_NAME",   "isIndexed": false, "isPartitionKey": false },
+        { "name": "ASSET_CLASS",     "isIndexed": false, "isPartitionKey": false },
+        { "name": "COUNTRY",         "isIndexed": false, "isPartitionKey": false },
+        { "name": "CURRENCY",        "isIndexed": false, "isPartitionKey": false },
+        { "name": "ISSUE_DATE",      "isIndexed": false, "isPartitionKey": false },
+        { "name": "MATURITY_DATE",   "isIndexed": false, "isPartitionKey": false }
+      ],
+      "indexes": [
+        { "name": "PK_RAW_SECURITIES", "type": "BTREE", "columns": ["SECURITY_ID"], "unique": true },
+        { "name": "IX_SEC_CUSIP",      "type": "BTREE", "columns": ["CUSIP"],       "unique": false },
+        { "name": "IX_SEC_ISIN",       "type": "BTREE", "columns": ["ISIN"],        "unique": true },
+        { "name": "IX_SEC_TICKER",     "type": "BTREE", "columns": ["TICKER"],      "unique": false }
+      ]
+    },
+    {
+      "schema": "RAW",
+      "name": "RAW_ACCOUNTS",
+      "rowCountEstimate": 22000,
+      "sizeMb": 8,
+      "partitionType": "NONE",
+      "partitionKeys": [],
+      "columns": [
+        { "name": "ACCOUNT_ID",      "isIndexed": true,  "isPartitionKey": false },
+        { "name": "ACCOUNT_NAME",    "isIndexed": false, "isPartitionKey": false },
+        { "name": "CLIENT_ID",       "isIndexed": true,  "isPartitionKey": false },
+        { "name": "ACCOUNT_TYPE",    "isIndexed": false, "isPartitionKey": false },
+        { "name": "BASE_CURRENCY",   "isIndexed": false, "isPartitionKey": false },
+        { "name": "INCEPTION_DATE",  "isIndexed": false, "isPartitionKey": false },
+        { "name": "STATUS",          "isIndexed": false, "isPartitionKey": false }
+      ],
+      "indexes": [
+        { "name": "PK_RAW_ACCOUNTS", "type": "BTREE", "columns": ["ACCOUNT_ID"], "unique": true },
+        { "name": "IX_ACC_CLIENT",   "type": "BTREE", "columns": ["CLIENT_ID"],  "unique": false }
+      ]
+    },
+    {
+      "schema": "MARTS",
+      "name": "FCT_HOLDINGS",
+      "rowCountEstimate": 380000000,
+      "sizeMb": 110000,
+      "partitionType": "RANGE",
+      "partitionKeys": ["AS_OF_DATE"],
+      "columns": [
+        { "name": "HOLDING_KEY",          "isIndexed": true,  "isPartitionKey": false },
+        { "name": "HOLDING_ID",           "isIndexed": false, "isPartitionKey": false },
+        { "name": "ACCOUNT_ID",           "isIndexed": true,  "isPartitionKey": false },
+        { "name": "SECURITY_ID",          "isIndexed": true,  "isPartitionKey": false },
+        { "name": "AS_OF_DATE",           "isIndexed": true,  "isPartitionKey": true  },
+        { "name": "QUANTITY",             "isIndexed": false, "isPartitionKey": false },
+        { "name": "MARKET_VALUE_USD",     "isIndexed": false, "isPartitionKey": false },
+        { "name": "COST_BASIS_USD",       "isIndexed": false, "isPartitionKey": false },
+        { "name": "UNREALIZED_GAIN_USD",  "isIndexed": false, "isPartitionKey": false },
+        { "name": "ACCOUNT_NAME",         "isIndexed": false, "isPartitionKey": false },
+        { "name": "ASSET_CLASS",          "isIndexed": false, "isPartitionKey": false }
+      ],
+      "indexes": [
+        { "name": "PK_FCT_HOLDINGS",      "type": "BTREE", "columns": ["HOLDING_KEY"], "unique": true },
+        { "name": "IX_FCT_HOLD_ACCOUNT",  "type": "LOCAL", "columns": ["ACCOUNT_ID", "AS_OF_DATE"], "unique": false },
+        { "name": "IX_FCT_HOLD_SECURITY", "type": "LOCAL", "columns": ["SECURITY_ID", "AS_OF_DATE"], "unique": false }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+# .pipeline-guardrails.yml — sized for the swp_demo project.
+
+rules:
+  no-select-star: warning
+  no-cartesian-join: error
+  no-implicit-join: warning
+  require-where-on-large-tables: error
+  no-function-on-indexed-column: warning
+  no-leading-wildcard-like: warning
+  no-unused-cte: info
+  no-order-by-without-limit: info
+  no-distinct-as-dedup-fix: warning
+  no-nested-subquery-depth: warning
+  avoid-not-in-with-nullable: warning
+  avoid-or-on-different-columns: info
+  prefer-exists-over-count: info
+  prefer-union-all-over-union: warning
+  no-trailing-semicolons-in-cte: warning
+  no-hardcoded-dates: info
+  no-cross-schema-without-source: warning
+  partition-pruning-required: error
+  index-usage-check: warning
+  full-scan-risk-on-large-table: error
+  join-without-keys: error
+  naming-convention: warning
+  dbt-ref-required: error
+  dbt-test-coverage: warning
+  documentation-required: info
+
+naming:
+  staging_prefix: stg_
+  fact_prefix: fct_
+  dimension_prefix: dim_
+  intermediate_prefix: int_
+
+# These match the Oracle metadata file. With duckdb you'll see no schema-aware
+# rule violations on real models (DuckDB doesn't have these tables); load
+# Oracle metadata to see them fire.
+largeTables:
+  - RAW.RAW_HOLDINGS
+  - RAW.RAW_TRANSACTIONS
+  - MARTS.FCT_HOLDINGS
+
+documentation:
+  require_model_description: true
+  require_column_description: false   # column-level off in the demo to reduce noise
+  exempt_columns:
+    - _loaded_at
+    - _ingested_at
+    - dbt_*
+
+dbt:
+  required_tests_for_primary_key:
+    - not_null
+    - unique
+  enforce_pk_tests: true
+
+performance:
+  maxRuntimeSeconds: 300
+  maxPlanCost: 100000
+  disallowFullScanOn:
+    - RAW.RAW_HOLDINGS
+    - MARTS.FCT_HOLDINGS
+
+diagnostics:
+  maxIssuesPerFile: 200

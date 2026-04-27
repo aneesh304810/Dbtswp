@@ -1,0 +1,54 @@
+# profiles.yml
+# ---------------------------------------------------------------------------
+# This file normally lives at ~/.dbt/profiles.yml. For convenience we ship a
+# copy here; copy or symlink it to ~/.dbt/profiles.yml before running dbt:
+#
+#   Linux/macOS:  cp profiles.yml ~/.dbt/profiles.yml
+#   Windows:      Copy-Item profiles.yml $env:USERPROFILE\.dbt\profiles.yml
+#
+# Or set DBT_PROFILES_DIR to this folder:
+#   $env:DBT_PROFILES_DIR = (Get-Location).Path     # PowerShell
+#   export DBT_PROFILES_DIR=$(pwd)                  # bash
+# ---------------------------------------------------------------------------
+
+swp_demo:
+  # Default target. Override with: dbt run --target oracle
+  target: duckdb
+
+  outputs:
+
+    # ---------------------------------------------------------------
+    # Local DuckDB target — zero infra, no credentials, fast.
+    # Creates a single file `swp_demo.duckdb` in the project root.
+    # Schemas (raw, staging, intermediate, marts) are simulated as
+    # DuckDB schemas inside that file.
+    # Required adapter: dbt-duckdb
+    # ---------------------------------------------------------------
+    duckdb:
+      type: duckdb
+      path: "swp_demo.duckdb"
+      threads: 4
+
+    # ---------------------------------------------------------------
+    # Oracle target — production-shaped. Mirrors a real BBH-style
+    # CPDW deployment: separate schemas, parallel session, Oracle
+    # client side. Required adapter: dbt-oracle.
+    #
+    # Replace placeholders with your real Oracle wallet / TNS entry.
+    # Easiest in dev: set environment variables and reference them.
+    # ---------------------------------------------------------------
+    oracle:
+      type: oracle
+      user: "{{ env_var('ORACLE_USER') }}"
+      password: "{{ env_var('ORACLE_PASSWORD') }}"
+      protocol: tcps
+      host: "{{ env_var('ORACLE_HOST', 'oracle-host.example.internal') }}"
+      port: 1522
+      service: "{{ env_var('ORACLE_SERVICE', 'CPDW') }}"
+      database: CPDW
+      schema: "{{ env_var('ORACLE_SCHEMA', 'CPDW_DEV') }}"
+      threads: 4
+      # Uncomment if using an Oracle Wallet for TLS:
+      # config_dir: "{{ env_var('TNS_ADMIN') }}"
+      # wallet_location: "{{ env_var('WALLET_LOCATION') }}"
+      # wallet_password: "{{ env_var('WALLET_PASSWORD') }}"

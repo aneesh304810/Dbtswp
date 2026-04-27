@@ -1,0 +1,6 @@
+target/
+dbt_packages/
+logs/
+swp_demo.duckdb
+swp_demo.duckdb.wal
+.user.yml

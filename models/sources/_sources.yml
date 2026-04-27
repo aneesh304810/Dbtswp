@@ -1,0 +1,90 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Landing zone for upstream system extracts. Loaded via dbt seed in the demo; in production this is populated by Airflow ingestion."
+    schema: raw
+    tables:
+
+      - name: raw_securities
+        identifier: raw_securities
+        description: "Security master data. One row per investable instrument. Source-of-record for CUSIP, ISIN, ticker."
+        columns:
+          - name: security_id
+            description: "Surrogate primary key."
+            data_tests:
+              - not_null
+              - unique
+          - name: cusip
+            description: "9-character CUSIP. Nullable for non-US securities."
+          - name: isin
+            description: "12-character ISIN. Globally unique."
+            data_tests:
+              - unique
+          - name: ticker
+          - name: security_name
+          - name: asset_class
+            description: "EQUITY | FIXED_INCOME | FUND | DERIVATIVE."
+          - name: country
+          - name: currency
+          - name: issue_date
+          - name: maturity_date
+            description: "Null for equities and open-ended funds."
+
+      - name: raw_accounts
+        identifier: raw_accounts
+        description: "Client portfolio accounts."
+        columns:
+          - name: account_id
+            data_tests:
+              - not_null
+              - unique
+          - name: account_name
+          - name: client_id
+          - name: account_type
+          - name: base_currency
+          - name: inception_date
+          - name: status
+            description: "ACTIVE | CLOSED | SUSPENDED."
+
+      - name: raw_holdings
+        identifier: raw_holdings
+        description: "Daily holdings snapshots. One row per account x security x as_of_date."
+        columns:
+          - name: holding_id
+            data_tests:
+              - not_null
+              - unique
+          - name: account_id
+            data_tests:
+              - not_null
+          - name: security_id
+            data_tests:
+              - not_null
+          - name: as_of_date
+          - name: quantity
+          - name: market_value_local
+          - name: market_value_usd
+          - name: cost_basis_usd
+          - name: currency
+
+      - name: raw_transactions
+        identifier: raw_transactions
+        description: "Trade and corporate-action transactions."
+        columns:
+          - name: transaction_id
+            data_tests:
+              - not_null
+              - unique
+          - name: account_id
+          - name: security_id
+          - name: trade_date
+          - name: settle_date
+          - name: transaction_type
+            description: "BUY | SELL | DIVIDEND | INTEREST | TRANSFER."
+          - name: quantity
+          - name: price_local
+          - name: gross_amount_local
+          - name: gross_amount_usd
+          - name: currency
+          - name: broker
